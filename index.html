@@ -30,7 +30,7 @@
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
-  const stripe = Stripe("pk_test_XXXXXXXXXXXXXXXXXXXXXXXX"); // <-- Cambiar por tu clave pública
+  const stripe = Stripe("pk_live_51RF2n3LI4r5KKtZXGwwNRl6yv3zXXrIMzuf2xxgLwGw7hgec61U4jcYp8fdlfQg2qGOjJHXkpWef9u3BIb4WYChz005oFicdrF"); // <-- Cambiar por tu clave pública
   const elements = stripe.elements();
   const card = elements.create("card");
   card.mount("#card-element");
