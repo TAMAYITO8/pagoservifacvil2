@@ -12,7 +12,9 @@ def index():
 
 @app.route("/create-setup-intent")
 def create_setup_intent():
-    intent = stripe.SetupIntent.create()
+    intent = stripe.SetupIntent.create(
+        payment_method_types=["card"]
+    )
     return jsonify(client_secret=intent.client_secret)
 
 @app.route("/guardar_tarjeta", methods=["POST"])
