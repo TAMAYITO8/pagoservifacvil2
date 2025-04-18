@@ -1,41 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Guardar tarjeta</title>
+  <title>Guardar tarjeta de manera segura</title>
   <script src="https://js.stripe.com/v3/"></script>
-  <style>
-    #card-element {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 4px;
-    }
-  </style>
 </head>
 <body>
   <h2>Guardar tarjeta de manera segura</h2>
 
-  <input type="email" id="email" placeholder="Correo electrónico" />
+  <input type="email" id="email" placeholder="Correo electrónico"><br><br>
   <div id="card-element"></div>
   <button id="guardar-btn">Guardar tarjeta</button>
 
-  <div id="resultado"></div>
+  <p id="resultado"></p>
 
   <script>
-    const stripe = Stripe("pk_live_51RF2n3LI4r5KKtZXGwwNRl6yv3zXXrIMzuf2xxgLwGw7hgec61U4jcYp8fdlfQg2qGOjJHXkpWef9u3BIb4WYChz005oFicdrF"); // TU CLAVE PUBLICABLE
-
+    const stripe = Stripe("pk_live_51RF2n3LI4r5KKtZXGwwNRl6yv3zXXrIMzuf2xxgLwGw7hgec61U4jcYp8fdlfQg2qGOjJHXkpWef9u3BIb4WYChz005oFicdrF"); // Reemplaza con tu clave pública de Stripe
     const elements = stripe.elements();
     const card = elements.create("card");
     card.mount("#card-element");
 
     document.getElementById("guardar-btn").addEventListener("click", async () => {
-      document.getElementById("resultado").textContent = "Procesando...";
+      const resultado = document.getElementById("resultado");
+      resultado.innerText = "Procesando...";
 
-      // Obtener el client_secret desde tu backend
-      const res = await fetch("/create-setup-intent");
-      const data = await res.json();
+      // 1. Crear SetupIntent
+      const setupIntentResp = await fetch("/create-setup-intent");
+      const { client_secret } = await setupIntentResp.json();
 
-      const result = await stripe.confirmCardSetup(data.client_secret, {
+      // 2. Confirmar card
+      const result = await stripe.confirmCardSetup(client_secret, {
         payment_method: {
           card: card,
           billing_details: {
@@ -45,26 +38,25 @@
       });
 
       if (result.error) {
-        document.getElementById("resultado").textContent = "❌ Error: " + result.error.message;
-      } else {
-        // Ahora envía el payment_method a tu backend para guardarlo
-        const r = await fetch("/guardar_tarjeta", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            payment_method: result.setupIntent.payment_method
-          })
-        });
-
-        const respuesta = await r.json();
-
-        if (respuesta.error) {
-          document.getElementById("resultado").textContent = "❌ Backend: " + respuesta.error;
-        } else {
-          document.getElementById("resultado").textContent = "✅ Tarjeta guardada para cliente: " + respuesta.customer_id;
-        }
+        resultado.innerText = "Error: " + result.error.message;
+        return;
       }
+
+      // 3. Enviar payment_method al backend
+      const guardarResp = await fetch("/guardar_tarjeta", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          payment_method: result.setupIntent.payment_method
+        })
+      });
+
+      const guardarData = await guardarResp.json();
+      resultado.innerText = guardarData.message || guardarData.error;
     });
   </script>
 </body>
 </html>
+
